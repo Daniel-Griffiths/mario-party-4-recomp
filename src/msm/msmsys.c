@@ -4,6 +4,92 @@
 #include "msm/msmmus.h"
 #include "msm/msmse.h"
 #include "msm/msmstream.h"
+#include <stdint.h>
+
+#ifdef TARGET_PC
+static inline u32 bswap32(u32 v) {
+    return ((v >> 24) & 0xFF) | ((v >> 8) & 0xFF00) |
+           ((v << 8) & 0xFF0000) | ((v << 24) & 0xFF000000u);
+}
+static inline s32 bswap32s(s32 v) { return (s32)bswap32((u32)v); }
+static inline u16 bswap16(u16 v) { return (u16)((v >> 8) | (v << 8)); }
+static inline s16 bswap16s(s16 v) { return (s16)bswap16((u16)v); }
+
+static void msmSwapHeader(MSM_HEADER *h) {
+    s32 *p = (s32 *)h;
+    int i;
+    for (i = 0; i < (int)(sizeof(MSM_HEADER) / sizeof(s32)); i++) {
+        p[i] = bswap32s(p[i]);
+    }
+}
+
+static void msmSwapInfo(MSM_INFO *info) {
+    /* s8 fields (voices, music, sfx, grpMax, stackDepthA/B, surroundF,
+       unkC, auxParamA, auxParamB, baseGrpNum, baseGrp[]) are single bytes - no swap needed */
+    info->musMax = bswap16s(info->musMax);
+    info->seMax = bswap16s(info->seMax);
+    info->minMem = bswap32s(info->minMem);
+    info->aramSize = bswap32s(info->aramSize);
+    info->grpBufSizeA = bswap32s(info->grpBufSizeA);
+    info->grpBufSizeB = bswap32s(info->grpBufSizeB);
+    info->dummyMusSize = bswap32s(info->dummyMusSize);
+    info->unk24 = bswap32s(info->unk24);
+}
+
+static void msmSwapGrpInfo(MSM_GRP_INFO *g, int count) {
+    int i;
+    for (i = 0; i < count; i++) {
+        g[i].gid = bswap32(g[i].gid);
+        g[i].dataOfs = bswap32s(g[i].dataOfs);
+        g[i].dataSize = bswap32s(g[i].dataSize);
+        g[i].sampOfs = bswap32s(g[i].sampOfs);
+        g[i].sampSize = bswap32s(g[i].sampSize);
+    }
+}
+
+static void msmSwapMus(MSM_MUS *m, int count) {
+    int i;
+    for (i = 0; i < count; i++) {
+        m[i].sgid = bswap32(m[i].sgid);
+        m[i].sid = bswap32(m[i].sid);
+        m[i].songOfs = bswap32s(m[i].songOfs);
+        m[i].songSize = bswap32s(m[i].songSize);
+    }
+}
+
+static void msmSwapSe(MSM_SE *se, int count) {
+    int i;
+    for (i = 0; i < count; i++) {
+        se[i].gid = bswap32(se[i].gid);
+        se[i].fxId = bswap32(se[i].fxId);
+        se[i].pitchBend = bswap16s(se[i].pitchBend);
+    }
+}
+
+/* Swap a 32-bit value in-place (works for u32, s32, f32) */
+static void swap32_inplace(void *p) {
+    u8 *b = (u8 *)p;
+    u8 t;
+    t = b[0]; b[0] = b[3]; b[3] = t;
+    t = b[1]; b[1] = b[2]; b[2] = t;
+}
+
+static void msmSwapAuxParam(MSM_AUXPARAM *p, int count) {
+    int i;
+    for (i = 0; i < count; i++) {
+        /* type is s8, pad is u8[3] - no swap needed */
+        /* Swap all the u32/f32 fields in the union (they all start at offset 4) */
+        /* The largest variant (delay) has 9 u32 fields = 36 bytes */
+        /* The union is at most 7 f32/u32 fields. Swap all of them generically. */
+        u32 *fields = (u32 *)&p[i].revHi; /* union starts here */
+        int j;
+        /* MSM_AUXPARAM_REVERBHI has 7 fields, DELAY has 9 - swap up to 9 */
+        for (j = 0; j < 9; j++) {
+            swap32_inplace(&fields[j]);
+        }
+    }
+}
+#endif /* TARGET_PC */
 
 static MSM_SYS sys;
 
@@ -189,6 +275,9 @@ s32 msmSysGroupInit(DVDFileInfo *file)
     if (msmFioRead(file, sys.grpInfo, sys.header->grpInfoSize, sys.header->grpInfoOfs) < 0) {
         return MSM_ERR_READFAIL;
     }
+#ifdef TARGET_PC
+    msmSwapGrpInfo(sys.grpInfo, sys.header->grpInfoSize / (s32)sizeof(MSM_GRP_INFO));
+#endif
     if ((sys.grpBufA = msmMemAlloc(sys.info->grpBufSizeA * sys.grpStackAMax)) == NULL) {
         return MSM_ERR_OUTOFMEM;
     }
@@ -209,13 +298,13 @@ s32 msmSysGroupInit(DVDFileInfo *file)
         stack = &sys.grpStackA[i];
         stack->grpId = stack->baseGrpF = 0;
         stack->num = 0;
-        stack->buf = (void*) ((u32) sys.grpBufA + sys.info->grpBufSizeA * i);
+        stack->buf = (void*) ((uintptr_t) sys.grpBufA + sys.info->grpBufSizeA * i);
     }
     for (i = 0; i < sys.grpStackBMax; i++) {
         stack = &sys.grpStackB[i];
         stack->grpId = stack->baseGrpF = 0;
         stack->num = 0;
-        stack->buf = (void*) ((u32) sys.grpBufB + sys.info->grpBufSizeB * i);
+        stack->buf = (void*) ((uintptr_t) sys.grpBufB + sys.info->grpBufSizeB * i);
     }
     sys.sampSize = 0;
     for (i = 0; i < sys.baseGrpNum; i++) {
@@ -804,6 +893,9 @@ s32 msmSysInit(MSM_INIT *init, MSM_ARAM *aram)
         msmFioClose(&sp10);
         return MSM_ERR_READFAIL;
     }
+#ifdef TARGET_PC
+    msmSwapHeader(sys.header);
+#endif
     if (sys.header->version != MSM_FILE_VERSION) {
         msmFioClose(&sp10);
         return MSM_ERR_INVALIDFILE;
@@ -816,6 +908,9 @@ s32 msmSysInit(MSM_INIT *init, MSM_ARAM *aram)
         msmFioClose(&sp10);
         return MSM_ERR_READFAIL;
     }
+#ifdef TARGET_PC
+    msmSwapInfo(sys.info);
+#endif
     if (aram != NULL) {
         if (aram->skipARInit == 0) {
             ARInit(aram->stackIndex, aram->aramEnd);
@@ -866,6 +961,9 @@ s32 msmSysInit(MSM_INIT *init, MSM_ARAM *aram)
                 result = MSM_ERR_READFAIL;
             }
             else {
+#ifdef TARGET_PC
+                msmSwapAuxParam(sys.auxParam, sys.header->auxParamSize / (s32)sizeof(MSM_AUXPARAM));
+#endif
                 result = 0;
             }
         }

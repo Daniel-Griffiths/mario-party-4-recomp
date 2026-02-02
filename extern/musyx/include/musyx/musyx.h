@@ -11,6 +11,7 @@
 extern "C" {
 #endif
 
+#ifndef _DOLPHIN_TYPES
 #if MUSY_TARGET == MUSY_TARGET_DOLPHIN
 typedef signed char s8;
 typedef unsigned char u8;
@@ -32,6 +33,7 @@ typedef unsigned long long u64;
 typedef float f32;
 typedef double f64;
 #endif
+#endif /* _DOLPHIN_TYPES */
 
 #ifndef NULL
 #define NULL 0
@@ -41,8 +43,10 @@ typedef double f64;
 typedef unsigned char bool8;
 #endif
 #ifndef __cplusplus
-#if __STDC_VERSION__ <= 199901L
+#if __STDC_VERSION__ < 202311L
+#ifndef __bool_true_false_are_defined
 typedef unsigned long bool;
+#endif
 #endif
 
 #ifndef FALSE

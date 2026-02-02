@@ -240,7 +240,11 @@ void HuPrcDestructorSet(void (*func)(void))
 void HuPrcCall(s32 tick)
 {
     Process *process;
+#ifdef TARGET_PC
+    volatile s32 ret; /* must be volatile: modified between sigsetjmp/siglongjmp */
+#else
     s32 ret;
+#endif
     processcur = processtop;
     ret = gcsetjmp(&processjmpbuf);
     while(1) {

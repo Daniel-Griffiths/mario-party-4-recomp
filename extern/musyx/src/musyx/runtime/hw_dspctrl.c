@@ -15,14 +15,26 @@
 
 
 */
+#include "musyx/platform.h"
+
+#if MUSY_TARGET == MUSY_TARGET_DOLPHIN
 #include "dolphin/os/OSCache.h"
+#include <dolphin/os.h>
+#else
+/* PC stubs for Dolphin cache / bus symbols */
+#define DCFlushRange(addr, len) ((void)0)
+#define DCFlushRangeNoSync(addr, len) ((void)0)
+#define DCStoreRangeNoSync(addr, len) ((void)0)
+#define DCInvalidateRange(addr, len) ((void)0)
+#define __OSBusClock (162000000u)
+#endif
+
 #include "musyx/assert.h"
 #include "musyx/dspvoice.h"
 #include "musyx/hardware.h"
 #include "musyx/sal.h"
 #include "musyx/stream.h"
 
-#include <dolphin/os.h>
 
 #include <string.h>
 
@@ -529,7 +541,7 @@ void salBuildCommandList(s16* dest, u32 nsDelay) {
         voices[v] = dsp_vptr;
       }
       voiceNum = (int)v;
-      SortVoices(voices, 0, voiceNum - 1);
+      if (voiceNum > 0) SortVoices(voices, 0, voiceNum - 1);
       procVoiceFlag = 0;
       for (v = voiceNum; v > 0; v--) {
         dsp_vptr = voices[v - 1];

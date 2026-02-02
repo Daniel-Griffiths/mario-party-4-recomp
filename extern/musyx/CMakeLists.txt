@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.27)
+cmake_minimum_required(VERSION 3.16)
 project(MusyX)
 
 set(MUSY_TARGET MUSY_TARGET_PC)
 
-set(CMAKE_C_STANDARD 23)
+find_package(SDL2 REQUIRED)
+
+set(CMAKE_C_STANDARD 11)
 add_library(musyx STATIC
         src/musyx/runtime/seq.c
         src/musyx/runtime/synth.c
@@ -41,7 +43,8 @@ add_library(musyx STATIC
 )
 
 target_include_directories(musyx PUBLIC include)
-target_compile_options(musyx PRIVATE -Werror -Wno-stringop-overflow -Wno-pointer-to-int-cast -gdwarf-4)
+target_link_libraries(musyx PRIVATE SDL2::SDL2)
+target_compile_options(musyx PRIVATE -Wno-stringop-overflow -Wno-pointer-to-int-cast -Wno-incompatible-pointer-types -Wno-int-conversion -Wno-return-type -Wno-implicit-function-declaration -gdwarf-4)
 target_compile_definitions(musyx PUBLIC -DMUSY_TARGET=${MUSY_TARGET}
         $<$<CONFIG:Debug>:_DEBUG>
         $<$<CONFIG:RelWithDebInfo>:_DEBUG>

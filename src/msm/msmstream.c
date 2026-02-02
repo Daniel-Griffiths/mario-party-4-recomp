@@ -2,6 +2,28 @@
 #include "msm/msmmem.h"
 #include "msm/msmsys.h"
 
+#ifdef TARGET_PC
+static inline u32 bswap32_stream(u32 v) {
+    return ((v >> 24) & 0xFF) | ((v >> 8) & 0xFF00) |
+           ((v << 8) & 0xFF0000) | ((v << 24) & 0xFF000000u);
+}
+static inline s32 bswap32s_stream(s32 v) { return (s32)bswap32_stream((u32)v); }
+static inline u16 bswap16_stream(u16 v) { return (u16)((v >> 8) | (v << 8)); }
+static inline s16 bswap16s_stream(s16 v) { return (s16)bswap16_stream((u16)v); }
+
+static void msmSwapStreamHeader(MSM_STREAM_HEADER *h) {
+    h->version = bswap16s_stream(h->version);
+    h->streamMax = bswap16s_stream(h->streamMax);
+    h->chanMax = bswap32s_stream(h->chanMax);
+    h->sampleFrq = bswap32s_stream(h->sampleFrq);
+    h->maxBufs = bswap32s_stream(h->maxBufs);
+    h->streamPackListOfs = bswap32_stream(h->streamPackListOfs);
+    h->adpcmParamOfs = bswap32_stream(h->adpcmParamOfs);
+    h->streamPackOfs = bswap32_stream(h->streamPackOfs);
+    h->sampleOfs = bswap32_stream(h->sampleOfs);
+}
+#endif
+
 typedef struct {
     /* 0x00 */ SND_STREAMID stid;
     /* 0x04 */ s16 streamId;
@@ -324,6 +346,9 @@ s32 msmStreamInit(char *pdtPath) {
         msmFioClose(&file);
         return MSM_ERR_READFAIL;
     }
+#ifdef TARGET_PC
+    msmSwapStreamHeader(&StreamInfo.header);
+#endif
     if (StreamInfo.header.version != MSM_PDT_FILE_VERSION) {
         msmFioClose(&file);
         return MSM_ERR_INVALIDFILE;
