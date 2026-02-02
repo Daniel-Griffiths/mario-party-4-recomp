@@ -9,7 +9,7 @@ This has only been tested on MacOS using an M series chip, it might not boot on 
 ![screenshot](screenshot.png)
 
 <p align="center" width="100%">
-<video src="[https://github.com/user-attachments/assets/563d36e5-1c92-49e6-aa88-c873a20ddf1d](https://github.com/user-attachments/assets/d72df47c-72d5-464a-b1ea-959c9a986539)" width="80%" controls></video>
+<video src="https://github.com/user-attachments/assets/d72df47c-72d5-464a-b1ea-959c9a986539" width="80%" controls></video>
 </p>
 
 ## Setup
