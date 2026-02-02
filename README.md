@@ -1,12 +1,13 @@
 # Mario Party 4 Recompilation
 
+> [!NOTE]
+> This repository contains no game assets. A legally obtained Mario Party 4 ISO is required to run the game.
+
 Based on https://github.com/mariopartyrd/marioparty4
 
 Disclaimer, I ran Claude on this project for a few hours and got the game into a bootable state. It's not playable but it does display basic graphics and can progress to the save screen by pressing Enter.
 
 This has only been tested on MacOS using an M series chip, it might not boot on other platforms.
-
-![screenshot](screenshot.png)
 
 <p align="center" width="100%">
 <video src="https://github.com/user-attachments/assets/d72df47c-72d5-464a-b1ea-959c9a986539" width="80%" controls></video>
