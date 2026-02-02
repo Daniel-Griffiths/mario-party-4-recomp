@@ -65,4 +65,3 @@ cd ..
 ```
 
 `./start.sh` will build and launch the game. It must be run from the project root so it can find data at `orig/GMPE01_00/files/`.
-# mario-party-4-recomp
