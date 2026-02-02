@@ -7,6 +7,7 @@ Disclaimer, I ran Claude on this project for a few hours and got the game into a
 This has only been tested on MacOS using an M series chip, it might not boot on other platforms.
 
 ![screenshot](screenshot.png)
+https://github.com/user-attachments/assets/d72df47c-72d5-464a-b1ea-959c9a986539
 
 ## Setup
 
